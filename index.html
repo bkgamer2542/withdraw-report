@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Withdrawal Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    * {margin: 0; padding: 0; box-sizing: border-box;}
+    body {
+      font-family: 'Kanit', sans-serif;
+      background: linear-gradient(135deg, #1a0d0d, #000000);
+      color: #ffebcd;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+    }
+    .page-container {
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+    .header {
+      text-align: center;
+      padding: 15px;
+      background: rgba(20, 10, 0, 0.8);
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 15px rgba(255, 165, 0, 0.4);
+    }
+    .text-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffd700;
+      text-shadow: 0 2px 4px rgba(255, 140, 0, 0.5);
+    }
+    .slip-card {
+      background: linear-gradient(145deg, rgba(60, 40, 10, 0.95), rgba(20, 10, 5, 0.95));
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(255, 140, 0, 0.2), inset 0 0 8px rgba(255, 215, 0, 0.1);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+    .notification-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 15px;
+    }
+    .notification {
+      background: linear-gradient(145deg, #332200, #1a0d00);
+      border: 1px solid #ffd700;
+      padding: 12px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(255, 140, 0, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.05);
+      transition: transform .3s ease, box-shadow .3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .notification .icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 12px;
+      border-radius: 10px;
+      border: 2px solid #ffd700;
+      padding: 4px;
+      background: rgba(255, 215, 0, 0.1);
+      box-shadow: 0 0 10px rgba(255, 165, 0, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.2);
+      transition: transform .3s ease;
+    }
+    .notification:hover .icon {
+      transform: rotate(360deg);
+    }
+    .notification .highlight {
+      color: #ffa500;
+      font-weight: 600;
+      text-shadow: 0 0 3px rgba(255, 140, 0, 0.4);
+    }
+    .notification p {
+      margin: 4px 0;
+      color: #ffebcd;
+      font-size: .9rem;
+      font-weight: 400;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      color: #ffebcd;
+      font-size: .9rem;
+      font-weight: 500;
+      margin-left: 12px;
+    }
+    .status i {
+      margin-right: 6px;
+      font-size: 1rem;
+      color: #ffd700;
+    }
+    .status.processing i {
+      animation: spin 1s linear infinite;
+    }
+    .footer {
+      text-align: center;
+      padding: 10px;
+      color: #e0e0e0;
+      font-size: .8rem;
+      margin-top: 15px;
+    }
+    @keyframes spin {
+      0% {transform: rotate(0deg);}
+      100% {transform: rotate(360deg);}
+    }
+    @media(max-width:480px){
+      .page-container{padding:0 8px}
+      .text-title{font-size:1.4rem;padding:12px}
+      .notification{padding:10px;border-radius:10px}
+      .notification .icon{width:40px;height:40px;margin:0 10px}
+      .notification p,.status{font-size:.8rem;margin:3px 0}
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="header">
+      <h2 class="text-title">รายงานผลอันดับการถอนเงิน</h2>
+    </div>
+    <div class="slip-card">
+      <div class="notification-container" id="notifications" aria-live="polite"></div>
+    </div>
+    <div class="footer">
+      อัปเดตเมื่อ: <span id="lastUpdated">-</span>
+    </div>
+  </div>
+
+  <script>
+    const MAX_NOTIFICATIONS = 5;
+    const INTERVAL = 3000; // 3 วินาที
+    const container = document.getElementById('notifications');
+    const lastUpdated = document.getElementById('lastUpdated');
+    const IMAGES = [
+      "https://img5.pic.in.th/file/secure-sv1/BAY138edb003404738c.png",
+      "https://img2.pic.in.th/pic/BBL5623288bf3514827.png",
+      "https://img2.pic.in.th/pic/KBANK188fb398741a931e.png",
+      "https://img5.pic.in.th/file/secure-sv1/KTBff6b13926bd4e486.png",
+      "https://img2.pic.in.th/pic/SCBb0fa8bfb34956394.png",
+      "https://img5.pic.in.th/file/secure-sv1/TTB3c0909ac0f482074.png"
+    ];
+    const BANKS = ['BAY', 'BBL', 'KBANK', 'KTB', 'SCB', 'TTB'];
+
+    function getRandom(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function createNotification() {
+      const index = getRandom(0, IMAGES.length - 1);
+      const user = `ZZx${getRandom(10000, 99999)}xx`;
+      const amount = getRandom(100, 10000).toFixed(2);
+      const now = new Date();
+      const date = now.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
+      const time = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      const isProcessing = Math.random() < 0.5;
+
+      const notification = document.createElement('div');
+      notification.className = 'notification';
+      notification.innerHTML = `
+        <img src="${IMAGES[index]}" class="icon" alt="${BANKS[index]} icon">
+        <div class="title-highlight">
+          <p>ยูส: <span class="highlight">${user}</span></p>
+          <p>ยอดถอน: <span class="highlight">${amount}</span> บาท</p>
+          <p>วันที่: <span class="highlight">${date} ${time}</span></p>
+        </div>
+        <div class="status ${isProcessing ? 'processing' : ''}">
+          <i class="fas ${isProcessing ? 'fa-spinner' : 'fa-check-circle'}"></i>
+          ${isProcessing ? 'กำลังโอน' : 'โอนแล้ว'}
+        </div>
+      `;
+
+      container.prepend(notification);
+      if (container.children.length > MAX_NOTIFICATIONS) {
+        container.removeChild(container.lastChild);
+      }
+
+      lastUpdated.textContent = `${date} ${time}`;
+    }
+
+    setInterval(createNotification, INTERVAL);
+    for (let i = 0; i < MAX_NOTIFICATIONS; i++) createNotification();
+  </script>
+</body>
+</html>
